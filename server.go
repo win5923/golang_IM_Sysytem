@@ -5,6 +5,7 @@ import (
 	"io"
 	"net"
 	"sync"
+	"time"
 )
 
 type Server struct {
@@ -59,15 +60,38 @@ func (this *Server) Handler(conn net.Conn) {
 
 	user.Online(this)
 
+	// Listen if the user is active
+	isLive := make(chan bool)
+
 	// Recieve messages from user
-	go this.ProcessMessage(user, conn)
+	go this.ProcessMessage(user, conn, isLive)
 
 	// BLock handler
-	select {}
+	for {
+		select {
+		case <-isLive:
+			// User is active, reset the timer
+			// Do nothing, just reset the timer
+
+		case <-time.After(time.Second * 10):
+			// Overtime
+
+			// Kick the user out
+
+			user.SendMsg("You are kicked out due to inactivity\n")
+
+			// Delete the user from online map
+			close(user.C)
+			// Close the connection
+			conn.Close()
+
+			return
+		}
+	}
 }
 
 // Precess the message from user
-func (this *Server) ProcessMessage(user *User, conn net.Conn) {
+func (this *Server) ProcessMessage(user *User, conn net.Conn, isLive chan bool) {
 	buf := make([]byte, 4096)
 	for {
 		n, err := conn.Read(buf)
@@ -86,6 +110,9 @@ func (this *Server) ProcessMessage(user *User, conn net.Conn) {
 
 		// User's message handling logic
 		user.DoMessage(msg)
+
+		// If the user receives a message, it means the user is still active
+		isLive <- true
 	}
 }
 
