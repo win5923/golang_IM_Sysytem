@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"net"
 	"sync"
 )
@@ -64,8 +65,34 @@ func (this *Server) Handler(conn net.Conn) {
 	// Broadcast welcome message
 	this.Broadcast(user, "has online")
 
+	// Recieve messages from user
+	go this.ProcessMessage(user, conn)
+
 	// BLock handler
 	select {}
+}
+
+// Precess the message from user
+func (this *Server) ProcessMessage(user *User, conn net.Conn) {
+	buf := make([]byte, 4096)
+	for {
+		n, err := conn.Read(buf)
+		if n == 0 {
+			this.Broadcast(user, "has offline")
+			return
+		}
+
+		if err != nil && err != io.EOF {
+			fmt.Println("Conn.Read err:", err)
+			return
+		}
+
+		// Process the message (remove '\n')
+		msg := string(buf[:n-1])
+
+		// Broadcast the message to all users
+		this.Broadcast(user, msg)
+	}
 }
 
 // start the server interface
