@@ -55,15 +55,9 @@ func (this *Server) Handler(conn net.Conn) {
 	// handle the connection
 	// fmt.Println("Client connected from:", conn.RemoteAddr().String())
 
-	user := NewUser(conn)
-	// User is online, Add user to online map
-	this.mapLock.Lock()
-	this.OnlineMap[user.Name] = user
+	user := NewUser(conn, this)
 
-	this.mapLock.Unlock()
-
-	// Broadcast welcome message
-	this.Broadcast(user, "has online")
+	user.Online(this)
 
 	// Recieve messages from user
 	go this.ProcessMessage(user, conn)
@@ -78,7 +72,7 @@ func (this *Server) ProcessMessage(user *User, conn net.Conn) {
 	for {
 		n, err := conn.Read(buf)
 		if n == 0 {
-			this.Broadcast(user, "has offline")
+			user.Offline(this)
 			return
 		}
 
@@ -90,8 +84,8 @@ func (this *Server) ProcessMessage(user *User, conn net.Conn) {
 		// Process the message (remove '\n')
 		msg := string(buf[:n-1])
 
-		// Broadcast the message to all users
-		this.Broadcast(user, msg)
+		// User's message handling logic
+		user.DoMessage(msg)
 	}
 }
 
