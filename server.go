@@ -73,7 +73,7 @@ func (this *Server) Handler(conn net.Conn) {
 			// User is active, reset the timer
 			// Do nothing, just reset the timer
 
-		case <-time.After(time.Second * 10):
+		case <-time.After(time.Second * 300):
 			// Overtime
 
 			// Kick the user out

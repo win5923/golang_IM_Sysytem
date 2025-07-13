@@ -90,6 +90,32 @@ func (this *User) DoMessage(msg string) {
 			this.SendMsg("You have successfully renamed to " + this.Name + "\n")
 		}
 
+	} else if len(msg) > 4 && msg[:3] == "to|" {
+		// Private message to another user
+		// Format: to|username|message
+
+		// 1. get the recipient's name
+		remoteName := strings.Split(msg, "|")[1]
+		if remoteName == "" {
+			this.SendMsg("The format is incorrect, please use: to|username|message\n")
+			return
+		}
+
+		// 2. Get the recipient user depending on the name
+		remoteUser, ok := this.server.OnlineMap[remoteName]
+		if !ok {
+			this.SendMsg("The user " + remoteName + " cannot be found.\n")
+			return
+		}
+
+		// 3. Send the message to the recipient
+		content := strings.Split(msg, "|")[2]
+		if content == "" {
+			this.SendMsg("The message cannot be empty.\n")
+			return
+		}
+		remoteUser.SendMsg(this.Name + " says: " + content + "\n")
+
 	} else {
 		this.server.Broadcast(this, msg)
 	}
